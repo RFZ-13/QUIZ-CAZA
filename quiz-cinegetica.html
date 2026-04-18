@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Cinegética — TS Gestión Forestal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@300;400;600&display=swap');
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --ink:#1a1208;--bark:#3d2b1a;--earth:#7a5c3a;--moss:#4a6741;--sage:#7a9e6e;
+    --dawn:#d4a853;--cream:#f5eed8;--parchment:#ede3c8;--red:#b84040;--green:#3a7a4a;
+    --card:#fff;--border:rgba(0,0,0,0.09);
+  }
+  body{font-family:'Source Sans 3',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(74,103,65,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 100%,rgba(122,92,58,0.09) 0%,transparent 50%);}
+
+  .header{background:var(--bark);color:var(--cream);padding:16px 24px;display:flex;align-items:center;
+    gap:14px;box-shadow:0 4px 20px rgba(0,0,0,.25);position:sticky;top:0;z-index:100;}
+  .header-icon{font-size:26px}
+  .header h1{font-family:'Playfair Display',serif;font-size:1.15rem;line-height:1.2}
+  .header p{font-size:.72rem;opacity:.65;margin-top:2px}
+
+  .prog-wrap{background:var(--parchment);border-bottom:1px solid rgba(0,0,0,.08);
+    padding:10px 24px;display:flex;align-items:center;gap:12px;font-size:.78rem;color:var(--earth);
+    position:sticky;top:65px;z-index:99;}
+  .prog-bar{flex:1;height:5px;background:rgba(0,0,0,.12);border-radius:3px;overflow:hidden}
+  .prog-fill{height:100%;background:linear-gradient(90deg,var(--moss),var(--sage));border-radius:3px;transition:width .4s}
+  .score-badge{background:var(--bark);color:var(--cream);padding:3px 10px;border-radius:20px;
+    font-weight:600;font-size:.73rem;white-space:nowrap}
+
+  .container{max-width:700px;margin:0 auto;padding:20px 16px 50px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:26px;
+    box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px;animation:up .28s ease}
+  @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .block-tag{display:inline-block;background:var(--moss);color:#fff;padding:2px 9px;
+    border-radius:4px;font-size:.7rem;font-weight:600;margin-bottom:12px;letter-spacing:.03em}
+  .question{font-family:'Playfair Display',serif;font-size:1.05rem;line-height:1.55;
+    color:var(--bark);margin-bottom:18px;font-weight:700}
+
+  .options{display:flex;flex-direction:column;gap:8px}
+  .option{display:flex;align-items:flex-start;gap:11px;padding:12px 15px;border-radius:8px;
+    border:2px solid var(--parchment);cursor:pointer;transition:all .16s;
+    background:var(--parchment);font-size:.91rem;line-height:1.45}
+  .option:hover:not(.done){border-color:var(--earth);background:#fff;transform:translateX(2px)}
+  .letter{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--earth);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;
+    font-size:.78rem;margin-top:1px;transition:background .16s}
+  .option.correct{border-color:var(--green);background:#eef7f0}
+  .option.correct .letter{background:var(--green)}
+  .option.wrong{border-color:var(--red);background:#fdf0f0}
+  .option.wrong .letter{background:var(--red)}
+  .option.dim{opacity:.4}
+  .option.done{cursor:default}
+
+  .explanation{margin-top:14px;padding:13px 15px;background:linear-gradient(135deg,#f0f7ee,#e8f4e8);
+    border-left:4px solid var(--moss);border-radius:0 8px 8px 0;font-size:.85rem;
+    line-height:1.55;color:var(--bark);display:none}
+  .explanation.show{display:block;animation:fd .22s ease}
+  @keyframes fd{from{opacity:0}to{opacity:1}}
+
+  .nav{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+  .btn{padding:9px 18px;border-radius:7px;border:none;cursor:pointer;
+    font-family:'Source Sans 3',sans-serif;font-size:.88rem;font-weight:600;transition:all .16s}
+  .btn-p{background:var(--bark);color:#fff}.btn-p:hover{background:var(--earth)}
+  .btn-s{background:var(--parchment);color:var(--bark);border:1px solid rgba(0,0,0,.12)}
+  .btn-s:hover{background:#e8dfc4}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+
+  .dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:14px}
+  .dot{width:17px;height:17px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer;
+    font-size:.62rem;display:flex;align-items:center;justify-content:center;
+    color:var(--earth);background:var(--parchment);transition:all .13s}
+  .dot.cur{border:2px solid var(--bark);font-weight:700}
+  .dot.ok{background:var(--green);border-color:var(--green);color:#fff}
+  .dot.no{background:var(--red);border-color:var(--red);color:#fff}
+
+  /* Results */
+  .results{text-align:center;padding:8px 0 20px}
+  .score-circle{width:120px;height:120px;border-radius:50%;margin:0 auto 18px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Playfair Display',serif;box-shadow:0 6px 28px rgba(0,0,0,.14)}
+  .score-circle .big{font-size:2rem;font-weight:700;line-height:1}
+  .score-circle .sub{font-size:.75rem;opacity:.7;margin-top:2px}
+  .grade-text{font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:5px}
+  .grade-sub{color:var(--earth);font-size:.88rem;margin-bottom:22px}
+  .stats{display:flex;gap:10px;justify-content:center;margin-bottom:22px;flex-wrap:wrap}
+  .stat{background:var(--parchment);border-radius:10px;padding:11px 16px;text-align:center;min-width:80px}
+  .stat .n{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--bark)}
+  .stat .l{font-size:.7rem;color:var(--earth);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+  .ak-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--bark);
+    margin:20px 0 11px;padding-bottom:8px;border-bottom:2px solid var(--parchment)}
+  .filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+  .ftab{padding:4px 11px;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;
+    border:1px solid rgba(0,0,0,.12);background:var(--parchment);color:var(--earth);
+    font-family:'Source Sans 3',sans-serif;transition:all .14s}
+  .ftab.on{background:var(--bark);color:#fff;border-color:var(--bark)}
+  .ak-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:7px;
+    margin-bottom:6px;font-size:.83rem;line-height:1.45}
+  .ak-item.ok{background:#eef7f0}
+  .ak-item.no{background:#fdf0f0}
+  .ak-icon{flex-shrink:0;font-size:.95rem}
+  .ak-num{flex-shrink:0;font-weight:600;color:var(--earth);width:22px}
+
+  /* Start screen */
+  .start{text-align:center;padding:12px 0}
+  .start h2{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--bark);margin-bottom:8px}
+  .start p{color:var(--earth);font-size:.9rem;margin-bottom:5px;line-height:1.5}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:18px 0 22px}
+  .tag{background:var(--parchment);border:1px solid rgba(0,0,0,.1);padding:4px 12px;
+    border-radius:20px;font-size:.76rem;color:var(--earth);font-weight:600}
+  .cta{font-size:.98rem;padding:13px 34px;border-radius:8px}
+
+  @media(max-width:480px){
+    .card{padding:18px 14px}
+    .question{font-size:.97rem}
+    .header h1{font-size:1rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🦅</div>
+  <div>
+    <h1>Test de Gestión Cinegética</h1>
+    <p>TS Gestión Forestal y del Medio Natural</p>
+  </div>
+</div>
+
+<div class="prog-wrap" id="progWrap" style="display:none">
+  <span id="progLabel" style="font-weight:600;min-width:65px"></span>
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  <div class="score-badge" id="scoreBadge">0/0</div>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+const Q=[
+{b:"Legislación",q:"Según la Ley de Caza de la Comunitat Valenciana 13/2004, la caza se define legalmente como:",o:{A:"La captura de cualquier animal silvestre con fines comerciales.",B:"El aprovechamiento racional de los recursos cinegéticos dirigido a la conservación y restauración del estado de normalidad de las poblaciones silvestres.",C:"Cualquier acción que implique el uso de armas en espacios naturales.",D:"La gestión de especies protegidas por organismos autorizados."},c:"B",e:"La Ley 13/2004 define expresamente la caza como aprovechamiento racional de los recursos cinegéticos para la conservación y restauración de la normalidad poblacional."},
+{b:"Legislación",q:"Bajo la ley de caza valenciana, ¿qué organismo tiene la competencia principal en materia cinegética?",o:{A:"El Ministerio de Medio Ambiente del Estado.",B:"Los ayuntamientos de cada municipio.",C:"La Generalitat Valenciana.",D:"La Guardia Civil."},c:"C",e:"El artículo 5 de la Ley 13/2004 atribuye la competencia en materia de caza a la Generalitat Valenciana, según el artículo 31.17 del Estatuto de Autonomía."},
+{b:"Legislación",q:"La declaración de un coto de caza en la Comunitat Valenciana lleva implícita para su titular:",o:{A:"Derechos exclusivos únicamente sobre la caza mayor.",B:"El derecho a excluir todo acceso público al territorio.",C:"La reserva del aprovechamiento cinegético de todas las especies declaradas cazables por las directrices de ordenación cinegética.",D:"La exención de las órdenes anuales de caza."},c:"C",e:"El artículo 26 de la Ley 13/2004 establece que la declaración de acotado lleva implícita la reserva del aprovechamiento sobre todas las especies cinegéticas declaradas como susceptibles de aprovechamiento."},
+{b:"Legislación",q:"Según el Reglamento de Armas español, la licencia E autoriza a su titular a poseer:",o:{A:"Hasta cinco armas largas rayadas para caza mayor.",B:"Hasta seis escopetas o seis armas largas rayadas para tiro deportivo, con un máximo de doce armas en total.",C:"Armas de ánima lisa ilimitadas para la caza.",D:"Solo una escopeta para caza de aves acuáticas."},c:"B",e:"El artículo 101 del Reglamento de Armas limita la licencia E a seis escopetas o seis armas largas rayadas, con un máximo total de doce armas."},
+{b:"Legislación",q:"¿Quién está exento de las pruebas de aptitud al solicitar por primera vez la licencia de caza en Valencia?",o:{A:"Los cazadores mayores de 60 años.",B:"Los cazadores que hayan tenido licencia en vigor en cualquier comunidad autónoma en los últimos cinco años.",C:"Todos los cazadores extranjeros.",D:"Los titulares de cotos de caza registrados."},c:"B",e:"Haber estado en posesión de licencia de caza en cualquier comunidad autónoma en los últimos cinco años exime de las pruebas de aptitud."},
+{b:"Legislación",q:"La munición con plomo está prohibida en los humedales Ramsar de España por el riesgo de:",o:{A:"Perturbación excesiva a las aves acuáticas.",B:"Plumbismo — intoxicación por plomo en aves que ingieren perdigones.",C:"Reducción de la precisión en entornos acuáticos.",D:"Incompatibilidad con las armas de ánima lisa."},c:"B",e:"El Real Decreto 581/2001 prohíbe la munición de plomo en humedales Ramsar para prevenir el plumbismo, intoxicación por plomo que afecta a las aves que ingieren perdigones."},
+{b:"Espacios cinegéticos",q:"¿Qué zona de reserva mínima debe mantener un coto comercial de caza en la Comunitat Valenciana?",o:{A:"5% de la superficie total.",B:"10% de la superficie total.",C:"20% de la superficie total.",D:"30% de la superficie total."},c:"C",e:"Los cotos comerciales deben mantener al menos un 20% de su superficie como zona de reserva de fauna, frente al 10% exigido a los cotos deportivos."},
+{b:"Legislación",q:"El Decreto 142/2025 del Consell introdujo como nueva herramienta de control para todos los ungulados silvestres:",o:{A:"El uso de cebos envenenados.",B:"Las rondas nocturnas para el control y gestión poblacional.",C:"La caza aérea mediante helicóptero.",D:"Los programas de esterilización obligatoria."},c:"B",e:"El artículo 5 del Decreto 142/2025 extiende las rondas nocturnas a todas las especies de ungulados silvestres, previa autorización administrativa."},
+{b:"Espacios cinegéticos",q:"Un coto intensivo de caza menor en la Comunitat Valenciana se define como aquel en el que se suelta:",o:{A:"Más de 1 perdiz cada 10 hectáreas, o más de 1 conejo cada 3 hectáreas.",B:"Más de 1 perdiz cada 50 hectáreas.",C:"Animales únicamente si el territorio supera las 500 hectáreas.",D:"Animales durante más de 30 días al año."},c:"A",e:"La normativa valenciana define el coto intensivo de caza menor como aquel en que se libera más de 1 perdiz/10 ha o más de 1 conejo/3 ha."},
+{b:"Espacios cinegéticos",q:"Un coto de piezas vivas de caza mayor en cercados requiere que la superficie del cerramiento sea:",o:{A:"Al menos 100 hectáreas.",B:"Superior a 300 hectáreas, salvo cercados preexistentes autorizados antes de 2005.",C:"Exactamente 500 hectáreas.",D:"Ilimitada si la densidad animal es baja."},c:"B",e:"Las piezas de caza mayor de cotos de piezas vivas deben proceder de cercados superiores a 300 ha, o de cercados preexistentes autorizados antes del 1 de enero de 2005."},
+{b:"Espacios cinegéticos",q:"Cuando un coto comparte territorio con otra comunidad autónoma que es mayoritaria, ¿qué plan técnico se aplica?",o:{A:"El plan de la Comunitat Valenciana en todo caso.",B:"Un plan conjunto redactado simultáneamente por ambas regiones.",C:"El plan de la comunidad mayoritaria, con informe complementario de la Generalitat Valenciana.",D:"El plan nacional aprobado por el Ministerio."},c:"C",e:"El artículo 25 de la Ley 13/2004 establece que el espacio se rige por el plan de la comunidad mayoritaria, debiendo la Generalitat Valenciana informar dicho plan."},
+{b:"Espacios cinegéticos",q:"Los guardas jurados de caza en la Comunitat Valenciana están regulados principalmente por:",o:{A:"El Código Civil.",B:"La Ley de Caza Valenciana 13/2004 y su orden reguladora específica.",C:"La legislación laboral general únicamente.",D:"El decreto nacional de armas."},c:"B",e:"La Ley 13/2004 y su normativa de desarrollo regulan específicamente el nombramiento, la formación y las funciones de los guardas jurados de caza."},
+{b:"Modalidades de caza",q:"¿Cuántos cazadores armados puede haber como máximo en una batida estándar en la Comunitat Valenciana?",o:{A:"15 cazadores armados.",B:"30 cazadores armados.",C:"60 cazadores armados, ampliables a 80 con autorización justificada de la Generalitat.",D:"100 cazadores armados."},c:"C",e:"La normativa valenciana fija el límite estándar de las batidas en 60 puestos armados, ampliables a 80 con autorización justificada de la Generalitat."},
+{b:"Modalidades de caza",q:"El 'gancho de jabalí' se reclasifica automáticamente como 'batida' cuando:",o:{A:"Se utilizan rapaces en lugar de perros.",B:"Supera los 15 cazadores armados O los 30 perros.",C:"Se celebra en días laborables.",D:"Se caza una especie distinta al jabalí."},c:"B",e:"El gancho de jabalí está estrictamente limitado a 15 cazadores armados y 30 perros; superar cualquiera de estos límites lo convierte en batida."},
+{b:"Modalidades de caza",q:"La cetrería fue declarada Patrimonio Cultural Inmaterial de la Humanidad por la UNESCO en:",o:{A:"2000",B:"2005",C:"2010",D:"2016"},c:"C",e:"La UNESCO declaró la cetrería Patrimonio Cultural Inmaterial de la Humanidad en el año 2010."},
+{b:"Modalidades de caza",q:"En la modalidad de ojeo de perdiz, ¿cuál es la función de los ojeadores?",o:{A:"Ocupar los puestos de tiro mientras los batidores empujan las perdices.",B:"Empujar las perdices hacia los puestos de tiro ocupados por los cazadores.",C:"Adiestrar a los perros entre las pasadas.",D:"Contar y registrar las piezas cobradas tras cada pasada."},c:"B",e:"En el ojeo, los ojeadores (batidores) empujan las perdices hacia los cazadores situados en puestos fijos de tiro."},
+{b:"Modalidades de caza",q:"¿Qué modalidad de caza utiliza una perdiz macho enjaulada para atraer a ejemplares silvestres durante el celo?",o:{A:"Al salto.",B:"En mano.",C:"Perdiz con reclamo macho.",D:"Mano sobre mano."},c:"C",e:"La modalidad 'perdiz con reclamo macho' emplea una perdiz macho enjaulada como reclamo para atraer a machos silvestres territoriales durante el período de celo."},
+{b:"Modalidades de caza",q:"Para la caza con arco de caza menor, la normativa exige un peso mínimo de:",o:{A:"20 libras.",B:"30 libras, con flechas tipo flu-flu y puntas de impacto o corte.",C:"50 libras con cualquier tipo de flecha.",D:"No existe peso mínimo establecido legalmente."},c:"B",e:"La normativa de caza con arco exige un peso mínimo de 30 libras, utilizando flechas tipo flu-flu con puntas de impacto o corte."},
+{b:"Modalidades de caza",q:"La técnica de caza mayor más selectiva, que implica acercarse individualmente a un animal elegido para un disparo preciso, es:",o:{A:"La montería.",B:"La batida.",C:"El rececho.",D:"El gancho."},c:"C",e:"El rececho es la técnica más selectiva de la caza mayor: el cazador se aproxima individualmente al animal elegido para efectuar un único disparo preciso."},
+{b:"Biología de especies",q:"¿Qué factor afecta más negativamente a las poblaciones silvestres de perdiz roja?",o:{A:"Las lluvias excesivas en primavera.",B:"La pérdida de diversidad de hábitat y la expansión de la agricultura intensiva.",C:"La competencia con aves acuáticas migratorias.",D:"La predación natural por el zorro exclusivamente."},c:"B",e:"Los estudios de gestión señalan sistemáticamente la simplificación del hábitat por la agricultura intensiva como principal causa del declive de las poblaciones silvestres de perdiz."},
+{b:"Biología de especies",q:"El conejo de monte es una 'especie clave' en la Península Ibérica principalmente porque:",o:{A:"Es el principal competidor de la perdiz roja.",B:"Constituye la base de la cadena trófica de depredadores amenazados como el lince ibérico y el águila imperial.",C:"Dispersa semillas de plantas en hábitats forestales.",D:"Controla el crecimiento de la hierba en zonas agrícolas."},c:"B",e:"El conejo es especie clave porque es la base alimentaria de especies en peligro crítico como el lince ibérico y el águila imperial ibérica."},
+{b:"Sanidad cinegética",q:"¿Cuál de estas afirmaciones sobre la Enfermedad Hemorrágica Vírica del conejo (EHV) es correcta?",o:{A:"La EHV es bacteriana y tratable con antibióticos.",B:"La EHV está causada por un calicivirus, es endémica en España y no se transmite al ser humano.",C:"La EHV solo afecta a conejos domésticos.",D:"La EHV produce síntomas crónicos fácilmente visibles en el campo."},c:"B",e:"La EHV está causada por un calicivirus, es endémica en poblaciones silvestres y domésticas españolas, no se transmite al hombre y produce mortalidad aguda sin lesiones externas visibles."},
+{b:"Biología de especies",q:"La liebre ibérica (Lepus granatensis) es principalmente activa:",o:{A:"Exclusivamente durante el día.",B:"En horas crepusculares y nocturnas (amanecer, atardecer y noche).",C:"Exclusivamente al mediodía.",D:"De forma aleatoria a lo largo de las 24 horas."},c:"B",e:"Las liebres son de hábitos crepusculares y nocturnos: descansan durante el día y se alimentan principalmente al amanecer, al atardecer y por la noche."},
+{b:"Biología de especies",q:"Desde el punto de vista de la gestión poblacional, el jabalí (Sus scrofa) se caracteriza por ser:",o:{A:"Una especie territorial con baja capacidad reproductora.",B:"Una especie muy adaptable, con reproducción prolífica y capaz de colonizar entornos urbanos.",C:"Una especie en declive demográfico en España.",D:"Una especie estrictamente forestal incapaz de sobrevivir en zonas agrícolas."},c:"B",e:"El jabalí destaca por su enorme adaptabilidad y tasa reproductora, apareciendo hoy en parques, campos de golf y núcleos urbanos de toda España."},
+{b:"Legislación",q:"¿Qué problema concreto motivó que el Decreto 142/2025 extendiese la regulación de ungulados más allá del jabalí?",o:{A:"El declive de las poblaciones de ciervo.",B:"El crecimiento de las poblaciones de todos los ungulados silvestres, generando conflictos como daños agrícolas y accidentes de tráfico.",C:"La introducción de nuevas especies exóticas de ungulados.",D:"El cambio climático que provoca desplazamientos de las áreas de distribución."},c:"B",e:"El Decreto 142/2025 responde al crecimiento de las poblaciones de TODOS los ungulados silvestres, que generan conflictos: daños a cultivos, accidentes de tráfico y riesgos sanitarios."},
+{b:"Biología de especies",q:"El arruí (Ammotragus lervia) tiene un estatus legal controvertido en Valencia porque:",o:{A:"Es una especie autóctona protegida por la normativa europea.",B:"Está catalogado como especie exótica invasora a nivel nacional pero figura como especie cinegética en la Ley 13/2004 de la Comunitat Valenciana.",C:"Su caza está completamente prohibida en toda España.",D:"Solo existe en cautividad en la región valenciana."},c:"B",e:"El arruí es invasor según la normativa nacional, pero fue introducido antes de la Ley 42/2007 y figura como especie cinegética en la Ley 13/2004, creando un conflicto normativo."},
+{b:"Biología de especies",q:"La becada (Scolopax rusticola) se caza habitualmente mediante la modalidad de:",o:{A:"Ojeo con ojeadores.",B:"Al salto con perros en zonas de monte o matorral.",C:"Trampeo con reclamos.",D:"Espera nocturna en puestos fijos."},c:"B",e:"La becada se caza al salto en zonas de monte y matorral con la ayuda de perros, aprovechando sus hábitos de ocultación entre la vegetación densa."},
+{b:"Biología de especies",q:"En la Comunitat Valenciana, el zorro (Vulpes vulpes) está clasificado como:",o:{A:"Especie estrictamente protegida.",B:"Especie exclusiva de la categoría de caza mayor.",C:"Especie de caza menor considerada también predadora y sujeta a control.",D:"Especie exótica invasora."},c:"C",e:"El zorro figura en el listado de especies de caza menor pero también es considerado predador en distintas comunidades autónomas, lo que permite su gestión mediante técnicas de control."},
+{b:"Biología de especies",q:"¿Qué subespecie de conejo de monte predomina en la Comunitat Valenciana?",o:{A:"Oryctolagus cuniculus algirus.",B:"Oryctolagus cuniculus cuniculus.",C:"Oryctolagus cuniculus hispanicus.",D:"Oryctolagus cuniculus valentinus."},c:"B",e:"O. c. cuniculus ocupa la mitad oriental de la Península Ibérica. La Comunitat Valenciana se encuentra dentro del área de distribución de esta subespecie oriental."},
+{b:"Gestión de poblaciones",q:"El método de censo por recuento de letrinas (excrementos) requiere conocer el siguiente parámetro biológico específico:",o:{A:"La proporción de sexos de la población.",B:"La tasa de defecación diaria (T) por individuo.",C:"La estructura de edades de la población.",D:"El área de campeo de cada individuo."},c:"B",e:"El recuento de letrinas calcula el tamaño poblacional mediante la fórmula N = (n × d) / T, donde T es la tasa de defecación diaria conocida de la especie."},
+{b:"Gestión de poblaciones",q:"El método de transectos lineales en censos de fauna estima:",o:{A:"La población total dentro de una parcela definida.",B:"La densidad poblacional por unidad de superficie, usando las distancias perpendiculares de detección.",C:"Las tasas de supervivencia a lo largo de varios años.",D:"Únicamente la proporción de sexos y edades."},c:"B",e:"Los transectos lineales estiman la densidad por unidad de superficie registrando las distancias perpendiculares de detección y aplicando modelos de probabilidad."},
+{b:"Gestión de poblaciones",q:"La densidad de perdices en un coto disminuye de 8 a 4 aves/100 ha en tres años consecutivos. La respuesta de gestión correcta es:",o:{A:"Aumentar la presión cinegética para favorecer la compensación.",B:"Reducir la presión cinegética, revisar la calidad del hábitat e investigar enfermedades y predación.",C:"Soltar perdices de granja sin más análisis.",D:"Aplicar rodenticidas para eliminar especies competidoras."},c:"B",e:"Un declive del 50% requiere reducir la caza, investigar las causas (hábitat, predación, enfermedad) y abordarlas antes de cualquier programa de repoblación."},
+{b:"Gestión de poblaciones",q:"En metodología de censos, 'precisión' significa reproducibilidad y 'exactitud' significa proximidad al valor real. Por tanto:",o:{A:"Un censo puede ser exacto pero no preciso.",B:"Un censo puede ser preciso pero no exacto.",C:"Ambas propiedades siempre van unidas.",D:"La precisión es más importante que la exactitud en la gestión cinegética."},c:"B",e:"Un censo puede ser preciso (resultados consistentes) pero inexacto (sistemáticamente errado). Ambas propiedades deben evaluarse de forma independiente."},
+{b:"Gestión de poblaciones",q:"Los conteos mediante batidas como método de censo funcionan porque:",o:{A:"Se garantiza el recuento de todos los animales del área.",B:"Los batidores empujan sistemáticamente los animales dentro de un área delimitada hacia observadores en puestos fijos.",C:"El método no perturba a los animales.",D:"Proporciona coordenadas GPS exactas de cada individuo."},c:"B",e:"Las batidas-censo funcionan delimitando una zona y usando batidores para empujar los animales hacia los observadores, permitiendo contar todos los que salen del área."},
+{b:"Gestión de poblaciones",q:"Un Índice Kilométrico de Abundancia (IKA) requiere registrar:",o:{A:"La superficie total del coto.",B:"El número de indicios (avistamientos, huellas, excrementos) por kilómetro de transecto.",C:"Muestras de ADN de animales individuales.",D:"Las estadísticas anuales de capturas de los últimos cinco años."},c:"B",e:"El IKA registra los indicios (avistamientos, huellas, heces) por kilómetro de transecto, proporcionando un índice de abundancia relativa estandarizado."},
+{b:"Gestión de poblaciones",q:"El rendimiento máximo sostenible de una población de perdices está determinado principalmente por:",o:{A:"El peso de cada ejemplar.",B:"La tasa de reproducción anual menos la mortalidad natural (el excedente anual).",C:"La proporción de machos y hembras en las capturas.",D:"La superficie del coto."},c:"B",e:"El rendimiento sostenible equivale a la producción anual (tasa reproductora menos mortalidad natural). Ese excedente puede cazarse sin reducir el tamaño poblacional."},
+{b:"Legislación",q:"En una zona declarada con sobreabundancia de ungulados según el Decreto 142/2025, la administración puede aplicar:",o:{A:"Únicamente los períodos hábiles tradicionales sin modificaciones.",B:"Períodos ampliados, técnicas adicionales de control y rondas nocturnas más allá de la caza deportiva estándar.",C:"La reubicación obligatoria de los animales en otras regiones.",D:"Campañas de envenenamiento aéreo."},c:"B",e:"El capítulo II del Decreto 142/2025 establece herramientas de gestión reforzadas en zonas de sobreabundancia: períodos ampliados, técnicas adicionales y rondas nocturnas."},
+{b:"Sanidad cinegética",q:"La sarna (sarcoptosis) en ungulados silvestres está causada por:",o:{A:"Bacterias del género Brucella.",B:"Un prión responsable de enfermedad neurológica crónica.",C:"El ácaro Sarcoptes scabiei.",D:"Un calicivirus similar al de la EHV."},c:"C",e:"La sarna está causada por el ácaro Sarcoptes scabiei, que excava galerías bajo la piel provocando prurito intenso, alopecia y lesiones cutáneas. Puede transmitirse ocasionalmente al ser humano."},
+{b:"Sanidad cinegética",q:"La principal medida de prevención al manipular liebres posiblemente infectadas de tularemia es:",o:{A:"Vacunar a los perros de caza antes de la temporada.",B:"Usar guantes al manipular los animales, especialmente si el manipulador tiene heridas o cortes.",C:"Manipular los animales únicamente 24 horas después de la muerte.",D:"Cocinar toda la carne de caza en el microondas antes de su consumo."},c:"B",e:"La prevención de la tularemia requiere el uso de guantes al manipular liebres potencialmente infectadas, ya que la transmisión se produce por contacto cutáneo con tejidos o sangre infectados."},
+{b:"Sanidad cinegética",q:"La triquinelosis asociada al jabalí requiere legalmente la siguiente actuación obligatoria:",o:{A:"Vacunar al jabalí contra Trichinella antes de la cacería.",B:"Inspección veterinaria obligatoria y análisis de Trichinella en la canal.",C:"Congelar la canal durante 48 horas a -10 °C.",D:"Consumir la carne en las 24 horas siguientes a la captura."},c:"B",e:"La legislación española exige la inspección veterinaria obligatoria y el análisis de Trichinella en todas las canales de jabalí destinadas al consumo humano."},
+{b:"Sanidad cinegética",q:"Aunque la EHV no se transmite a las personas, su principal preocupación desde el punto de vista de la conservación es:",o:{A:"Afecta a todos los lagomorfos silvestres, incluidas especies amenazadas.",B:"Reduce drásticamente la abundancia de conejos, afectando directamente a depredadores especialistas como el lince ibérico.",C:"Provoca mutaciones genéticas en generaciones posteriores.",D:"Se transmite al ganado bovino y ovino."},c:"B",e:"La EHV puede reducir drásticamente las poblaciones de conejo, privando de alimento a depredadores especialistas en peligro crítico como el lince ibérico."},
+{b:"Sanidad cinegética",q:"Si un cazador encuentra un número inusual de animales de la misma especie muertos en el campo, el protocolo correcto es:",o:{A:"Enterrar los cadáveres de inmediato para evitar la propagación de enfermedades.",B:"Contactar con la autoridad competente para que se puedan tomar muestras y realizar análisis.",C:"Aprovechar y vender la carne tras una cocción a alta temperatura.",D:"Comunicarlo al final de la temporada."},c:"B",e:"Las mortalidades masivas de fauna silvestre deben comunicarse de inmediato a la autoridad ambiental competente para su muestreo y análisis."},
+{b:"Sanidad cinegética",q:"Un cazador aprecia lesiones en el hígado de una liebre recién cobrada. La respuesta inmediata adecuada es:",o:{A:"Desechar el hígado y consumir el resto de la canal normalmente.",B:"Contactar con las autoridades y evitar el contacto desprotegido con las vísceras.",C:"Cocinar toda la canal a alta temperatura de inmediato.",D:"Congelar la canal durante 72 horas antes de procesarla."},c:"B",e:"Las lesiones hepáticas en liebres pueden indicar tularemia u otras zoonosis. El protocolo exige contactar con las autoridades y utilizar guantes de protección."},
+{b:"Seguridad y primeros auxilios",q:"Un compañero de caza es encontrado inconsciente y sin respiración. La secuencia correcta de actuación según la regla de las 3 E es:",o:{A:"Evacuar — Evaluar — Estabilizar.",B:"Evaluar — Estabilizar — Evacuar.",C:"Estabilizar — Evaluar — Evacuar.",D:"Evacuar — Estabilizar — Evaluar."},c:"B",e:"El protocolo de las 3 E es: Evaluar (valorar la gravedad) → Estabilizar (evitar el agravamiento) → Evacuar (trasladar al centro asistencial). Este orden es obligatorio."},
+{b:"Seguridad y primeros auxilios",q:"Ante una herida por arma de fuego en el tórax en el campo:",o:{A:"Las heridas torácicas raramente son graves.",B:"Las heridas torácicas tienen alto riesgo de mortalidad; son esenciales la valoración rápida y la evacuación prioritaria.",C:"La herida debe taponarse firmemente con algodón.",D:"Si el cazador está consciente, no es necesaria ninguna actuación adicional."},c:"B",e:"Las heridas torácicas tienen alta mortalidad por la proximidad a estructuras vitales (corazón, pulmones, grandes vasos). Son esenciales la valoración rápida y la evacuación prioritaria."},
+{b:"Seguridad y primeros auxilios",q:"Ante una lesión ocular por perdigones durante una jornada de caza, la respuesta inmediata correcta es:",o:{A:"Extraer el perdigón de inmediato con pinzas.",B:"Cubrir el ojo afectado con una gasa limpia y evacuar urgentemente a un centro especializado.",C:"Aplicar colirio y dejar descansar al cazador.",D:"Lavar el ojo con agua durante 30 minutos."},c:"B",e:"Las lesiones oculares por perdigón deben cubrirse (sin tratar ni presionar) y el accidentado debe ser evacuado con urgencia. No debe comer ni beber, pues puede necesitar anestesia general."},
+{b:"Seguridad y primeros auxilios",q:"En el ojeo de perdiz con pantallas metálicas laterales, está estrictamente prohibido:",o:{A:"Disparar a aves que vuelen por encima de la pantalla.",B:"Disparar horizontalmente por debajo o a través de las pantallas metálicas laterales hacia los puestos adyacentes.",C:"Recargar el arma más de una vez por pasada.",D:"Usar escopetas semiautomáticas en los puestos fijos."},c:"B",e:"Disparar horizontalmente por debajo de las pantallas laterales es especialmente peligroso para los cazadores de los puestos adyacentes y está expresamente prohibido."},
+{b:"Planificación de la gestión",q:"El Plan Técnico de Ordenación Cinegética (PTOC) debe resolverse en 6 meses. Si no se resuelve en ese plazo:",o:{A:"Se considera denegado automáticamente.",B:"Se considera aprobado por silencio administrativo positivo.",C:"Se requiere intervención judicial.",D:"Se concede automáticamente una prórroga de dos años."},c:"B",e:"La normativa valenciana aplica silencio administrativo positivo a los PTOC: la falta de resolución en 6 meses equivale a su aprobación, a diferencia de la mayoría de procedimientos administrativos."},
+{b:"Planificación de la gestión",q:"Antes de cualquier programa de repoblación con perdiz roja de granja, el requisito esencial previo es:",o:{A:"Que el precio de mercado de la perdiz de granja sea inferior a cierto umbral.",B:"Identificar y resolver las causas del declive poblacional para garantizar la supervivencia de los animales soltados.",C:"Obtener el consentimiento escrito de todos los titulares de cotos colindantes.",D:"Que el coto tenga una superficie superior a 500 hectáreas."},c:"B",e:"Soltar perdices de granja sin resolver las causas del declive es ineficaz ecológica y económicamente. La mejora del hábitat y el control de predadores deben preceder a cualquier repoblación."},
+{b:"Planificación de la gestión",q:"El Decreto 142/2025 obliga a protocolos específicos de gestión de cadáveres cuando una cacería colectiva de ungulados supera:",o:{A:"Más de 10 cazadores armados.",B:"Cacerías celebradas fuera de los períodos hábiles oficiales.",C:"Más de 40 puestos armados O más de 20 animales abatidos por jornada.",D:"Cualquier cacería en la que participen cazadores extranjeros."},c:"C",e:"El Título III del Decreto 142/2025 activa protocolos obligatorios de gestión de cadáveres y subproductos cuando la cacería supera 40 puestos o 20 animales por jornada, para prevenir la transmisión de enfermedades."}
+];
+
+const BLOCKS=[...new Set(Q.map(q=>q.b))];
+let st={screen:"start",cur:0,ans:{},filter:"Todos"};
+
+function $i(id){return document.getElementById(id)}
+function app(){return $i("app")}
+
+function render(){
+  if(st.screen==="start") renderStart();
+  else if(st.screen==="quiz") renderQuiz();
+  else renderResults();
+  updateProg();
+}
+
+function updateProg(){
+  const pw=$i("progWrap");
+  if(st.screen==="quiz"){
+    pw.style.display="flex";
+    const done=Object.keys(st.ans).length;
+    const pct=Math.round(done/Q.length*100);
+    $i("progFill").style.width=pct+"%";
+    $i("progLabel").textContent="P"+(st.cur+1)+" / "+Q.length;
+    const correct=Object.values(st.ans).filter(a=>a.correct).length;
+    $i("scoreBadge").textContent=correct+"/"+done;
+  } else {
+    pw.style.display="none";
+  }
+}
+
+function renderStart(){
+  app().innerHTML=`<div class="card start">
+    <div style="font-size:40px;margin-bottom:12px">🦅</div>
+    <h2>Test de Gestión Cinegética</h2>
+    <p>TS Gestión Forestal y del Medio Natural</p>
+    <p style="margin-top:4px;font-size:.82rem;opacity:.7">50 preguntas · Nivel FP Grado Superior</p>
+    <div class="tags">${BLOCKS.map(b=>`<span class="tag">${b}</span>`).join("")}</div>
+    <button class="btn btn-p cta" onclick="startQuiz()">Comenzar el test →</button>
+  </div>`;
+}
+
+function startQuiz(){
+  st={screen:"quiz",cur:0,ans:{},filter:"Todos"};
+  render();
+}
+
+function renderQuiz(){
+  const i=st.cur, q=Q[i], a=st.ans[i];
+  const start=Math.max(0,i-4), end=Math.min(Q.length,start+10);
+  let dots="";
+  for(let d=start;d<end;d++){
+    let cls="dot"+(d===i?" cur":"")+(st.ans[d]?(st.ans[d].correct?" ok":" no"):"");
+    dots+=`<div class="${cls}" onclick="goTo(${d})">${d+1}</div>`;
+  }
+  let opts="";
+  ["A","B","C","D"].forEach(l=>{
+    let cls="option"+(a?" done":"");
+    if(a){
+      if(l===q.c) cls+=" correct";
+      else if(l===a.chosen) cls+=" wrong";
+      else cls+=" dim";
+    }
+    opts+=`<div class="${cls}" onclick="answer('${l}')"><div class="letter">${l}</div><div>${q.o[l]}</div></div>`;
+  });
+  const exp=a?`<div class="explanation show">💡 <b>Explicación:</b> ${q.e}</div>`:"";
+  const last=i===Q.length-1;
+  app().innerHTML=`<div class="card">
+    <div class="block-tag">${q.b}</div>
+    <div class="question">${q.q}</div>
+    <div class="options">${opts}</div>
+    ${exp}
+    <div class="nav">
+      <button class="btn btn-s" onclick="prevQ()" ${i===0?"disabled":""}>← Anterior</button>
+      <button class="btn btn-p" onclick="nextQ()" ${a?"":"disabled"}>${last?"Ver resultados →":"Siguiente →"}</button>
+      <button class="btn btn-s" onclick="skipQ()" ${a?"style='display:none'":""}>Saltar</button>
+    </div>
+    <div class="dots">${dots}</div>
+  </div>`;
+}
+
+function answer(l){
+  const i=st.cur;
+  if(st.ans[i]) return;
+  st.ans[i]={chosen:l,correct:l===Q[i].c};
+  render();
+}
+function nextQ(){
+  if(st.cur>=Q.length-1){st.screen="results";render();}
+  else{st.cur++;render();}
+}
+function prevQ(){if(st.cur>0){st.cur--;render();}}
+function goTo(i){st.cur=i;render();}
+function skipQ(){if(!st.ans[st.cur])st.ans[st.cur]={chosen:null,correct:false};nextQ();}
+
+function renderResults(){
+  const total=Q.length;
+  const done=Object.keys(st.ans).length;
+  const correct=Object.values(st.ans).filter(a=>a.correct).length;
+  const wrong=done-correct;
+  const pct=Math.round(correct/total*100);
+  let grade,gsub,gcol;
+  if(pct>=90){grade="Excelente 🥇";gsub="Resultado sobresaliente";gcol=["#3a7a4a","#fff"];}
+  else if(pct>=75){grade="Bien 🥈";gsub="Resultado satisfactorio";gcol=["#7a7a3a","#fff"];}
+  else if(pct>=50){grade="Aprobado 🥉";gsub="Resultado suficiente";gcol=["#7a5c3a","#fff"];}
+  else{grade="No superado ❌";gsub="Necesita repasar los contenidos";gcol=["#b84040","#fff"];}
+
+  const f=st.filter;
+  const filtered=Q.map((q,i)=>({q,i,a:st.ans[i]})).filter(({q,i,a})=>{
+    if(!a) return false;
+    if(f==="Errores") return !a.correct;
+    if(f==="Aciertos") return a.correct;
+    if(f!=="Todos") return q.b===f;
+    return true;
+  });
+
+  const tabs=["Todos","Aciertos","Errores",...BLOCKS];
+  const akHTML=filtered.length?filtered.map(({q,i,a})=>`
+    <div class="ak-item ${a.correct?"ok":"no"}">
+      <div class="ak-icon">${a.correct?"✅":"❌"}</div>
+      <div class="ak-num">Q${i+1}</div>
+      <div>
+        <div style="font-weight:600;margin-bottom:4px;font-size:.83rem">${q.q.substring(0,85)}${q.q.length>85?"...":""}</div>
+        ${a.correct
+          ?`<div style="font-size:.78rem;color:#3a7a4a">✓ ${a.chosen}: ${q.o[a.chosen].substring(0,60)}</div>`
+          :`<div style="font-size:.78rem;color:#b84040">Tu respuesta: ${a.chosen||"Saltada"}</div>
+           <div style="font-size:.78rem;color:#3a7a4a">✓ Correcta: ${q.c} — ${q.o[q.c].substring(0,55)}</div>
+           <div style="font-size:.76rem;color:#7a5c3a;font-style:italic;margin-top:3px">💡 ${q.e}</div>`
+        }
+      </div>
+    </div>`).join("")
+    :`<div style="text-align:center;color:#7a5c3a;padding:20px;font-size:.85rem">No hay elementos con este filtro.</div>`;
+
+  app().innerHTML=`<div class="card">
+    <div class="results">
+      <div class="score-circle" style="background:${gcol[0]};color:${gcol[1]}">
+        <div class="big">${correct}/${total}</div>
+        <div class="sub">${pct}%</div>
+      </div>
+      <div class="grade-text">${grade}</div>
+      <div class="grade-sub">${gsub}</div>
+      <div class="stats">
+        <div class="stat"><div class="n" style="color:#3a7a4a">${correct}</div><div class="l">Correctas</div></div>
+        <div class="stat"><div class="n" style="color:#b84040">${wrong}</div><div class="l">Errores</div></div>
+        <div class="stat"><div class="n">${total-done}</div><div class="l">Saltadas</div></div>
+        <div class="stat"><div class="n">${pct}%</div><div class="l">Nota</div></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="startQuiz()">🔄 Repetir test</button>
+        <button class="btn btn-s" onclick="reviewWrong()">Repasar errores</button>
+      </div>
+    </div>
+    <div class="ak-title">📋 Revisión de respuestas</div>
+    <div class="filters">${tabs.map(t=>`<button class="ftab${st.filter===t?" on":""}" onclick="setFilter('${t}')">${t}</button>`).join("")}</div>
+    ${akHTML}
+  </div>`;
+}
+
+function setFilter(f){st.filter=f;renderResults();}
+function reviewWrong(){
+  const w=Object.keys(st.ans).filter(i=>!st.ans[i].correct).map(Number);
+  if(!w.length){alert("¡No tienes errores! 🎉");return;}
+  st.cur=w[0];st.screen="quiz";render();
+}
+
+render();
+</script>
+</body>
+</html>
